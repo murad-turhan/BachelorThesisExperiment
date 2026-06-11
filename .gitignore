@@ -1,0 +1,39 @@
+# ---------------------------------------------------------------------------
+# DSGVO-SCHUTZ: keine personenbezogenen / unternehmensinternen Daten ins Repo!
+# ---------------------------------------------------------------------------
+# Aufbereitete Datensätze enthalten pseudonyme Lead-IDs, Fahrzeug- und Preisdaten
+# echter Kunden -> NICHT veröffentlichen.
+data/
+*.xlsx
+*.parquet
+
+# Abbildungen können einzelne reale Preispunkte zeigen -> sicherheitshalber raus.
+figures/
+
+# ---------------------------------------------------------------------------
+# ERGEBNISSE: nur den finalen, nicht-doppelten Satz hochladen.
+# Alles in results/ wird ignoriert AUSSER der folgenden kanonischen Dateien.
+# (Die übrigen CSVs sind redundant in model_results.json enthalten oder
+#  stammen aus Zwischen-/Testläufen.)
+# ---------------------------------------------------------------------------
+results/*
+!results/FINDINGS.md
+!results/model_results.json
+!results/descriptive_table.csv
+!results/descriptive_summary.json
+!results/ssl_iteration_trajectory.csv
+!results/ssl_threshold_sweep.csv
+
+# Python / venv
+.venv/
+__pycache__/
+*.pyc
+.ipynb_checkpoints/
+
+# OS / IDE
+.DS_Store
+.idea/
+.vscode/
+
+# Persönliche Upload-Hilfe (gehört nicht ins öffentliche Repo)
+GITHUB_UPLOAD.md

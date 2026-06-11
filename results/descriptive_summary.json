@@ -1,0 +1,18 @@
+{
+  "n_labeled": 112,
+  "n_pool": 5000,
+  "corr_kv_final": 0.8018276086465491,
+  "var_final_price": 19010894.41271961,
+  "var_delta": 9221730.498076754,
+  "max_brand_deviation_pp": 0.7,
+  "top_brands": {
+    "Mercedes-Benz": 27,
+    "Volkswagen": 25,
+    "Audi": 19
+  },
+  "top_damage": {
+    "Hoher Ölverbrauch": 16,
+    "Motor macht Geräusche": 16,
+    "Motor läuft unrund": 12
+  }
+}

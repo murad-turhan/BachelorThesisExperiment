@@ -1,0 +1,8 @@
+# Python >= 3.10 empfohlen
+pandas>=1.5
+numpy>=1.23
+openpyxl>=3.1
+scikit-learn>=1.1
+xgboost>=1.7
+matplotlib>=3.6
+pyarrow>=10.0   # nur falls die gold-Parquet-Datei gelesen werden soll (optional)
