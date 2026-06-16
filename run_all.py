@@ -60,7 +60,12 @@ def main():
     # MAE-Vergleichsabbildung (mit Std über Folds)
     main_models = comp[comp["model"].str.contains(
         "Ridge|RandomForest|XGBoost|RF_SSL", regex=True)].copy()
-    labels = main_models["approach"].str[:2].str.upper() + " " + main_models["model"]
+    # Saubere, an die Thesis-Tabellen (A1/A2/A3) angelehnte Achsenbeschriftung
+    _approach_short = {"1_baseline": "A1", "2_delta": "A2", "3_ssl": "A3"}
+    _model_short = {"Ridge": "Ridge", "RandomForest": "RF", "XGBoost": "XGB",
+                    "RF_SSL(labels+pseudo)": "RF+SSL"}
+    labels = [f"{_approach_short.get(a, a)}: {_model_short.get(m, m)}"
+              for a, m in zip(main_models["approach"], main_models["model"])]
     fig, ax = plt.subplots(figsize=(9, 4.5))
     ax.bar(range(len(main_models)), main_models["MAE_mean"],
            yerr=main_models["MAE_std"], capsize=4, color="#1F3864")
@@ -70,6 +75,10 @@ def main():
     fig.tight_layout()
     fig.savefig(C.FIGURES_DIR / "mae_comparison.png", dpi=140)
     fig.savefig(C.FIGURES_DIR / "mae_comparison.pdf"); plt.close(fig)
+
+    # Lesbarer Gesamtreport mit allen Tabellen (results/RESULTS.md)
+    from src import report
+    report.main()
 
     print(f"\nAlle Ergebnisse: {C.RESULTS_DIR}")
     print(f"Alle Abbildungen: {C.FIGURES_DIR}")

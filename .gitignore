@@ -17,7 +17,7 @@ figures/
 #  stammen aus Zwischen-/Testläufen.)
 # ---------------------------------------------------------------------------
 results/*
-!results/FINDINGS.md
+!results/RESULTS.md
 !results/model_results.json
 !results/descriptive_table.csv
 !results/descriptive_summary.json
