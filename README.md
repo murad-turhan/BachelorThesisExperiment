@@ -1,152 +1,143 @@
-# Modell-Experimente zur Bachelorarbeit
-**Reparaturkostenprognose bei deinmotorschaden.de unter Small-Data-Bedingungen**
+# Model experiments for the bachelor thesis
+**Repair cost prediction at deinmotorschaden.de under small-data conditions**
 
-Dieses Repository enthält den vollständigen, reproduzierbaren Code für die
-empirischen Experimente (Kapitel 6 *Implementierung* und Kapitel 7 *Empirische
-Ergebnisse*). Die Umsetzung folgt exakt der Methodik aus Kapitel 5.
+This repository holds the full, reproducible code for the empirical experiments
+(Chapter 6 *Implementation* and Chapter 7 *Empirical Results*). The implementation
+follows the methodology described in Chapter 5.
 
-Aus Datenschutzgründen (DSGVO) enthält das Repository ausschließlich Code; die
-zugrundeliegenden Kundendaten werden nicht veröffentlicht.
+For data protection reasons (GDPR) the repository contains only code. The
+underlying customer data is not published.
 
----
+## 1. Mapping to the thesis
 
-## 1. Mapping zur Bachelorarbeit
-
-| Datei | Kapitel | Inhalt |
+| File | Chapter | Content |
 |---|---|---|
-| `src/data_prep.py` | 4.2–4.4 / 5.2 | Labeled-Set + Unlabeled-Pool aus Salesforce-Exporten |
-| `src/pseudo_labels.py` | 5.5 | Stratifizierte Auswahl der 5.000 Pseudo-Label-Kandidaten |
-| `src/preprocessing.py` | 5.2 | StandardScaler (numerisch) + OneHotEncoding (kategorial) |
-| `src/models.py` | 5.3 / 6.3 | Ridge, RandomForest, XGBoost + Hyperparameter-Gitter |
+| `src/data_prep.py` | 4.2 to 4.4 / 5.2 | Labeled set and unlabeled pool from the Salesforce exports |
+| `src/pseudo_labels.py` | 5.5 | Stratified selection of the 5,000 pseudo-label candidates |
+| `src/preprocessing.py` | 5.2 | StandardScaler (numeric) and OneHotEncoding (categorical) |
+| `src/models.py` | 5.3 / 6.3 | Ridge, RandomForest, XGBoost plus the hyperparameter grids |
 | `src/metrics.py` | 5.6 | MAE, RMSE, R², MAPE |
-| `src/nested_cv.py` | 5.6 | Nested CV (äußerer 5-fold, innerer 3-fold) |
-| `src/approach1_baseline.py` | 5.3 / 7.2 | Ansatz 1: Baseline-Regression |
-| `src/approach2_delta.py` | 5.4 / 7.3 | Ansatz 2: Delta-/Residual-Modellierung |
-| `src/approach3_ssl.py` | 5.5 / 7.4 | Ansatz 3: SSL mit Pseudo-Labeling |
-| `src/approach3_ssl_diagnostics.py` | 7.4 | Iterations-/Schwellwert-Diagnose des SSL-Ansatzes |
-| `src/descriptive.py` | 7.1 | Deskriptive Analyse + Abbildungen |
-| `run_all.py` | 6/7 | Orchestriert die gesamte Pipeline |
+| `src/nested_cv.py` | 5.6 | Nested CV (outer 5-fold, inner 3-fold) |
+| `src/approach1_baseline.py` | 5.3 / 7.2 | Approach 1: baseline regression |
+| `src/approach2_delta.py` | 5.4 / 7.3 | Approach 2: delta / residual modelling |
+| `src/approach3_ssl.py` | 5.5 / 7.4 | Approach 3: SSL with pseudo-labeling |
+| `src/approach3_ssl_diagnostics.py` | 7.4 | Iteration and threshold diagnostics for the SSL approach |
+| `src/descriptive.py` | 7.1 | Descriptive analysis and figures |
+| `run_all.py` | 6/7 | Orchestrates the whole pipeline |
 
----
-
-## 2. Projektstruktur
+## 2. Project structure
 
 ```
 kfz-repair-pricing-experiments/
-├── config.py                 # zentrale Pfade & Parameter (Seed, Folds, ...)
+├── config.py                 # central paths and parameters (seed, folds, ...)
 ├── requirements.txt
-├── run_all.py                # End-to-End-Lauf
-├── data/                     # erzeugte Datensätze (lokal, nicht im Repo)
-├── results/                  # Nested-CV-Ergebnisse als CSV/JSON
-├── figures/                  # Abbildungen für Kap. 7.1 (lokal, nicht im Repo)
-└── src/                      # Module (s. Tabelle oben)
+├── run_all.py                # end-to-end run
+├── data/                     # generated datasets (local, not in the repo)
+├── results/                  # nested-CV results as CSV/JSON
+├── figures/                  # figures for Ch. 7.1 (local, not in the repo)
+└── src/                      # modules (see the table above)
 ```
 
----
+## 3. Data basis
 
-## 3. Datengrundlage
+Three Salesforce objects are joined over relational IDs (Ch. 4.2). One note on the
+join: the offers export uses 18-character lead IDs, the customer export uses
+15-character ones, so the join runs on the first 15 characters.
 
-Drei Salesforce-Objekte werden über relationale IDs verknüpft (Kap. 4.2). Hinweis:
-Der Offers-Export nutzt 18-stellige, der Customer-Export 15-stellige Lead-IDs –
-gejoint wird auf den ersten 15 Zeichen.
+**Labeled set (approaches 1 and 2): 112 cases** with a final repair price confirmed
+by one of the seven workshops.
 
-**Labeled-Set (Ansatz 1 & 2): 112 Fälle** mit von einer der sieben Werkstätten
-bestätigtem finalem Reparaturpreis.
+**Unlabeled pool (approach 3): roughly 38,000 cost estimates.**
+`offers_with_estimates.xlsx` (all cost estimates) is joined with the full
+`Customer` export (vehicle features) over the lead ID; already labeled leads are
+excluded.
 
-**Unlabeled-Pool (Ansatz 3): rund 38.000 KVs.** `offers_with_estimates.xlsx`
-(alle Kostenvoranschläge) wird mit dem vollständigen `Customer`-Export
-(Fahrzeug-Features) über die Lead-ID verknüpft; gelabelte Leads werden
-ausgeschlossen.
+### Feature selection (Ch. 5.2)
 
-### Feature-Selektion (Kap. 5.2)
-Verwendet werden die zwölf strukturierten Features der Arbeit:
+The twelve structured features used in the thesis are:
 
-- **Numerisch:** `year_of_construction`, `mileage`, `kw`, `hsn`, `vehicle_age`
-- **Kategorial:** `brand`, `model`, `fuel_type`, `car_from_country`,
+- **Numeric:** `year_of_construction`, `mileage`, `kw`, `hsn`, `vehicle_age`
+- **Categorical:** `brand`, `model`, `fuel_type`, `car_from_country`,
   `vehicle_ready_to_drive`, `damage_type`, `motor_code`
-- **Kostenvoranschlag (`price_estimation`):** erst ab Ansatz 2 ein Feature
-  (in Ansatz 1 bewusst ausgeschlossen, vgl. Kap. 5.2).
+- **Cost estimate (`price_estimation`):** only used as a feature from approach 2
+  onward (deliberately left out in approach 1, see Ch. 5.2).
 
-Numerische Features: Median-Imputation + `StandardScaler`. Kategoriale Features:
-Konstant-Imputation + `OneHotEncoder(handle_unknown="ignore")`. Wegen der
-hochkardinalen Felder (`model`, `motor_code`) treten in Test-Folds ungesehene
-Ausprägungen auf; `handle_unknown="ignore"` fängt diese ab. Alle Schritte werden
-fold-intern gefittet (kein Data Leakage).
+Numeric features get median imputation plus `StandardScaler`. Categorical features
+get constant imputation plus `OneHotEncoder(handle_unknown="ignore")`. Because of
+the high-cardinality fields (`model`, `motor_code`), unseen categories show up in
+the test folds; `handle_unknown="ignore"` catches those. Every step is fitted
+inside the fold, so there is no data leakage.
 
----
+## 4. The three approaches
 
-## 4. Die drei Ansätze
+**Approach 1: baseline regression (Ch. 5.3).** Direct regression
+`final_price ~ vehicle and damage features` (without the cost estimate) using
+Ridge, RandomForest and XGBoost.
 
-**Ansatz 1 – Baseline-Regression (Kap. 5.3).** Direkte Regression
-`final_price ~ Fahrzeug-/Schadensmerkmale` (ohne KV) mit Ridge / RandomForest /
-XGBoost.
+**Approach 2: delta / residual modelling (Ch. 5.4).** The target is
+`delta = final_price - KV`, and the prediction is
+`final_price_hat = KV + delta_hat`. Evaluation happens on the reconstructed price,
+so it stays directly comparable to approach 1. Theoretical basis: Crane and Crotty
+(1967), Malpezzi (1999). In practice the delta transformation roughly halves the
+variance the model has to learn (Var(final) is about 19.0 million, Var(delta) about
+9.2 million).
 
-**Ansatz 2 – Delta-/Residual-Modellierung (Kap. 5.4).** Zielvariable ist
-`delta = final_price − KV`; vorhergesagt wird `final_price_hat = KV + delta_hat`.
-Die Bewertung erfolgt auf dem rekonstruierten Preis und ist damit direkt mit
-Ansatz 1 vergleichbar. Theoretische Basis: Crane & Crotty (1967), Malpezzi (1999).
-Empirisch halbiert die Delta-Transformation die zu lernende Varianz
-(Var(final) ≈ 19,0 Mio. → Var(delta) ≈ 9,2 Mio.).
+**Approach 3: SSL with pseudo-labeling (Ch. 5.5).** Self-training with a confidence
+threshold (Lee 2013; Rizve et al. 2021):
 
-**Ansatz 3 – SSL mit Pseudo-Labeling (Kap. 5.5).** Self-Training mit
-Confidence-Schwellwert (Lee 2013; Rizve et al. 2021):
-1. RandomForest auf dem gelabelten Trainings-Fold tunen (innerer 3-fold).
-2. Vorhersage `final_price` auf den 5.000 KVs; Unsicherheit = Std. über die RF-Bäume.
-3. Die sichersten `q %` (niedrigste Std.) werden als Pseudo-Labels akzeptiert.
-4. Akzeptierte ins Training übernehmen, neu fitten — max. 3 Iterationen.
+1. Tune a RandomForest on the labeled training fold (inner 3-fold).
+2. Predict `final_price` on the 5,000 cost estimates; the uncertainty is the
+   standard deviation across the RF trees.
+3. The most certain `q %` (lowest std) are accepted as pseudo-labels.
+4. Add the accepted ones to the training set and refit, for at most 3 iterations.
 
-Der Schwellwert `q ∈ {20, 30, 40 %}` wird im inneren CV mitoptimiert. Leakage-Schutz:
-Pseudo-Labels entstehen ausschließlich aus dem äußeren Trainings-Fold; der Test-Fold
-bleibt unangetastet. Zur Performance-Degradation-Frage (van Engelen & Hoos 2020)
-wird je Fold zusätzlich ein rein überwachter RandomForest bewertet.
+The threshold `q` in {20, 30, 40 %} is tuned inside the inner CV. Leakage
+protection: pseudo-labels come only from the outer training fold, and the test fold
+is never touched. To address the performance-degradation question (van Engelen and
+Hoos 2020), a purely supervised RandomForest is also evaluated per fold.
 
----
+## 5. Validation (Ch. 5.6)
 
-## 5. Validierung (Kap. 5.6)
+Nested cross-validation: an outer `KFold(5, shuffle, seed=42)` for an unbiased
+performance estimate, and an inner `GridSearchCV(cv=3)` for the hyperparameter
+choice. The full preprocessing sits inside the scikit-learn pipeline and is refitted
+per fold. The reasoning behind this strategy at n = 112 follows Vabalas et al.
+(2019).
 
-Nested Cross-Validation: äußerer `KFold(5, shuffle, seed=42)` zur unverzerrten
-Performanzschätzung, innerer `GridSearchCV(cv=3)` zur Hyperparameterwahl. Die
-gesamte Vorverarbeitung steckt in der scikit-learn-Pipeline und wird pro Fold neu
-gefittet. Begründung der Strategie bei n = 112: Vabalas et al. (2019).
+## 6. Source mapping
 
----
-
-## 6. Quellen-Mapping
-
-| Quelle | Verwendung im Code |
+| Source | Use in the code |
 |---|---|
-| Lee (2013) *Pseudo-Label* | Self-Training-Grundprinzip (Ansatz 3) |
-| Rizve et al. (2021) *Uncertainty-Aware PL Selection* | Confidence-Schwellwert über Unsicherheit |
-| van Engelen & Hoos (2020) *SSL Survey* | überwachte Referenz / Performance-Degradation-Test |
-| Kim et al. (2023) *Self-Training for Tabular* | SSL-Self-Training auf Tabellendaten |
-| Friedman (2001) *Gradient Boosting* | theoretische Basis XGBoost (Ansatz 1) |
-| Vabalas et al. (2019) *Validation w/ limited sample* | Begründung Nested CV |
-| Crane & Crotty (1967), Malpezzi (1999) | Delta-/Residualmodell (Ansatz 2) |
+| Lee (2013) *Pseudo-Label* | Self-training principle (approach 3) |
+| Rizve et al. (2021) *Uncertainty-Aware PL Selection* | Confidence threshold based on uncertainty |
+| van Engelen and Hoos (2020) *SSL Survey* | Supervised reference / performance-degradation test |
+| Kim et al. (2023) *Self-Training for Tabular* | SSL self-training on tabular data |
+| Friedman (2001) *Gradient Boosting* | Theoretical basis for XGBoost (approach 1) |
+| Vabalas et al. (2019) *Validation w/ limited sample* | Reasoning for nested CV |
+| Crane and Crotty (1967), Malpezzi (1999) | Delta / residual model (approach 2) |
 
----
+## 7. How to run
 
-## 7. Ausführung
-
-Voraussetzung: Python ≥ 3.10. Die Pfade zu den Rohdaten sind in `config.py`
-konfigurierbar (per Umgebungsvariable oder direkt im Code).
+Requirement: Python 3.10 or newer. The paths to the raw data are configurable in
+`config.py` (via an environment variable or directly in the code).
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python3 run_all.py
-python3 src/approach3_ssl_diagnostics.py   # SSL-Diagnose (Kap. 7.4)
+python3 src/approach3_ssl_diagnostics.py   # SSL diagnostics (Ch. 7.4)
 ```
 
-Alle Ergebnisse werden nach `results/`, alle Abbildungen nach `figures/`
-geschrieben. Durch den festen `random_state=42` ist jeder Lauf reproduzierbar.
+All results are written to `results/`, all figures to `figures/`. Thanks to the
+fixed `random_state=42` every run is reproducible.
 
-Einzelne Schritte lassen sich auch separat ausführen, z. B.:
+Individual steps can also be run on their own, for example:
 
 ```bash
 python3 src/data_prep.py        # labeled.csv + unlabeled_pool_full.csv
 python3 src/pseudo_labels.py    # pseudo_pool_5000.csv
-python3 src/descriptive.py      # Kennzahlen + Abbildungen
+python3 src/descriptive.py      # metrics and figures
 python3 src/approach1_baseline.py
 python3 src/approach2_delta.py
 python3 src/approach3_ssl.py
