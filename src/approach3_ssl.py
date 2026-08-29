@@ -1,7 +1,7 @@
 """
 Ansatz 3: Semi-Supervised Learning mit Pseudo-Labeling (Kap. 5.5 / 7.4).
 
-Self-Training mit Konfidenz-Schwellwert (Lee 2013; Rizve et al. 2021):
+Self-Training mit Konfidenz-Schwellwert (Lee 2013):
   1. RandomForest auf dem aktuellen gelabelten Set (Features inkl. KV).
   2. Vorhersage final_price für den ungelabelten Pool (stratifizierte 5.000 KVs).
   3. Konfidenz = Std. der Einzelbaum-Vorhersagen (Gl. eq:konfidenz).
