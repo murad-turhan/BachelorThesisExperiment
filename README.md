@@ -83,7 +83,7 @@ variance the model has to learn (Var(final) is about 19.0 million, Var(delta) ab
 9.2 million).
 
 **Approach 3: SSL with pseudo-labeling (Ch. 5.5).** Self-training with a confidence
-threshold (Lee 2013; Rizve et al. 2021):
+threshold (Lee 2013):
 
 1. Tune a RandomForest on the labeled training fold (inner 3-fold).
 2. Predict `final_price` on the 5,000 cost estimates; the uncertainty is the
@@ -109,7 +109,7 @@ per fold. The reasoning behind this strategy at n = 112 follows Vabalas et al.
 | Source | Use in the code |
 |---|---|
 | Lee (2013) *Pseudo-Label* | Self-training principle (approach 3) |
-| Rizve et al. (2021) *Uncertainty-Aware PL Selection* | Confidence threshold based on uncertainty |
+| Rizve et al. (2021) *Uncertainty-Aware PL Selection* | Motivation for filtering by uncertainty rather than raw confidence; UPS itself is not implemented |
 | van Engelen and Hoos (2020) *SSL Survey* | Supervised reference / performance-degradation test |
 | Kim et al. (2023) *Self-Training for Tabular* | SSL self-training on tabular data |
 | Friedman (2001) *Gradient Boosting* | Theoretical basis for XGBoost (approach 1) |
